@@ -1,4 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
+import * as bcrypt from 'bcrypt';
 import { PrismaClient } from '../generated/prisma/client';
 import { envs } from '../src/config/envs';
 
@@ -31,6 +32,32 @@ async function main() {
       create: rol,
     });
   }
+
+  const correo = process.env.SEED_ADMIN_CORREO ?? 'admin@autoserv.local';
+  const yaExiste = await prisma.usuario.findUnique({ where: { correo } });
+  if (yaExiste) {
+    return;
+  }
+
+  const administrador = await prisma.rol.findUnique({
+    where: { nombre: 'Administrador' },
+  });
+  if (!administrador) {
+    throw new Error('El rol Administrador no existe');
+  }
+
+  await prisma.usuario.create({
+    data: {
+      nombre: process.env.SEED_ADMIN_NOMBRE ?? 'Admin',
+      apellido: process.env.SEED_ADMIN_APELLIDO ?? 'Taller',
+      correo,
+      passwordHash: await bcrypt.hash(
+        process.env.SEED_ADMIN_PASSWORD ?? 'Admin12345',
+        10,
+      ),
+      rolId: administrador.id,
+    },
+  });
 }
 
 main()
