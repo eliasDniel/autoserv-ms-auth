@@ -28,6 +28,14 @@ export class AuthService {
     return { status: 'ok', servicio: 'ms-auth', roles };
   }
 
+  async listUsers() {
+    const usuarios = await this.prisma.usuario.findMany({
+      include: { rol: true },
+      orderBy: [{ activo: 'desc' }, { nombre: 'asc' }, { apellido: 'asc' }],
+    });
+    return usuarios.map((usuario) => this.toPublicUser(usuario));
+  }
+
   async createUser(dto: CreateUserDto) {
     const existing = await this.prisma.usuario.findUnique({
       where: { correo: dto.correo },

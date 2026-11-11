@@ -13,6 +13,11 @@ export class AuthController {
     return this.authService.health();
   }
 
+  @MessagePattern('auth.user.list')
+  listUsers() {
+    return this.authService.listUsers();
+  }
+
   @MessagePattern('auth.user.create')
   createUser(@Payload() dto: CreateUserDto) {
     return this.authService.createUser(dto);
