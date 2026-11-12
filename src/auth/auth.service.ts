@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtPayload } from './interfaces/payload.interface';
 
 type UsuarioConRol = {
@@ -69,6 +70,36 @@ export class AuthService {
     });
 
     return this.toPublicUser(usuario);
+  }
+
+  async updateUser(id: number, dto: UpdateUserDto) {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id } });
+    if (!usuario) {
+      throw new RpcException({ statusCode: 404, message: 'Usuario no encontrado' });
+    }
+
+    let rolId = usuario.rolId;
+    if (dto.rol) {
+      const rol = await this.prisma.rol.findUnique({ where: { nombre: dto.rol } });
+      if (!rol) {
+        throw new RpcException({ statusCode: 400, message: 'El rol no existe' });
+      }
+      rolId = rol.id;
+    }
+
+    const actualizado = await this.prisma.usuario.update({
+      where: { id },
+      data: {
+        ...(dto.nombre ? { nombre: dto.nombre } : {}),
+        ...(dto.apellido ? { apellido: dto.apellido } : {}),
+        ...(dto.activo === undefined ? {} : { activo: dto.activo }),
+        ...(dto.password ? { passwordHash: await bcrypt.hash(dto.password, 10) } : {}),
+        rolId,
+      },
+      include: { rol: true },
+    });
+
+    return this.toPublicUser(actualizado);
   }
 
   async login(dto: LoginUserDto) {

@@ -23,6 +23,12 @@ export class AuthController {
     return this.authService.createUser(dto);
   }
 
+  @MessagePattern('auth.user.update')
+  updateUser(@Payload() dto: { id: number } & import('./dto/update-user.dto').UpdateUserDto) {
+    const { id, ...data } = dto;
+    return this.authService.updateUser(id, data);
+  }
+
   @MessagePattern('auth.login')
   login(@Payload() dto: LoginUserDto) {
     return this.authService.login(dto);
